@@ -1,0 +1,72 @@
+---
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: webapp
+    labels:
+      app: webapp
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: webapp
+    template:
+      metadata:
+        labels:
+          app: webapp
+      spec:
+        serviceAccountName: data-team1
+        containers:
+        - name: secretless-broker
+          image: quay.io/myeung/vault-go-client:v0.0.1
+          imagePullPolicy: Always
+          env:
+          - name: VAULT_ADDR
+            value: "http://vault:8200"
+          - name: JWT_PATH
+            value: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+          - name: SERVICE_PORT
+            value: "8080"
+          # Conjur - AUTHN login is not needed for authn-jwt
+          - name: CONJUR_AUTHN_LOGIN
+            value:
+          - name: CONJUR_AUTHN_URL
+            valueFrom:
+              configMapKeyRef:
+                name: jwt-dap-config
+                key: CONJUR_AUTHN_URL
+            # values from pod metadata
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+
+            # values from DAP config map
+          - name: CONJUR_VERSION
+            valueFrom:
+              configMapKeyRef:
+                name: jwt-dap-config
+                key: CONJUR_VERSION
+          - name: CONJUR_ACCOUNT
+            valueFrom:
+              configMapKeyRef:
+                name: jwt-dap-config
+                key: CONJUR_ACCOUNT
+          - name: CONJUR_APPLIANCE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: jwt-dap-config
+                key: CONJUR_APPLIANCE_URL
+          - name: CONJUR_SSL_CERTIFICATE
+            valueFrom:
+              configMapKeyRef:
+                name: jwt-dap-config
+                key: CONJUR_FOLLOWER_CERTIFICATE
